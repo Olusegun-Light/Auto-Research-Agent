@@ -1,0 +1,18 @@
+# Node/Docker ignores
+node_modules
+npm-debug.log
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+dist
+outputs
+.env
+.env.*
+.vscode
+.idea
+.git
+README.md
+tests
+.husky
+coverage
+.DS_Store
