@@ -9,6 +9,7 @@
  * - Delivering files directly
  */
 
+import express from 'express';
 import { TelegramBot } from './bot/telegramBot.js';
 import { config } from './config/index.js';
 import { Logger } from './utils/index.js';
@@ -55,6 +56,27 @@ async function main() {
     // Create and start bot
     const bot = new TelegramBot(config.telegramBotToken);
     await bot.start();
+
+    // Start HTTP server for Render port binding
+    const app = express();
+    const PORT = parseInt(process.env.PORT || '3000', 10);
+
+    app.get('/', (_req, res) => {
+      res.json({
+        status: 'running',
+        service: 'AutoResearch Telegram Bot',
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    app.get('/health', (_req, res) => {
+      res.json({ status: 'healthy' });
+    });
+
+    app.listen(PORT, '0.0.0.0', () => {
+      logger.info(`HTTP server listening on 0.0.0.0:${PORT}`);
+      console.log(`🌐 HTTP server is accessible on port ${PORT}`);
+    });
 
     console.log('\n╔═══════════════════════════════════════════════════════════╗');
     console.log('║   🚀 Bot is running!                                      ║');

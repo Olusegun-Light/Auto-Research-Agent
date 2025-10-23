@@ -9,6 +9,21 @@ An intelligent, autonomous research agent powered by **ADK-TS** (AI Development 
 ![TypeScript](https://img.shields.io/badge/typescript-5.3.0-blue.svg)
 ![ADK-TS](https://img.shields.io/badge/ADK--TS-0.5.0-orange.svg)
 
+## 🏆 Hackathon Submission
+
+**Built for**: ADK-TS Hackathon 2025  
+**Category**: Agent Applications  
+**Live Demo**: [Try the Telegram Bot](https://t.me/autosearchagentbot) 🤖
+
+This project demonstrates advanced ADK-TS patterns including:
+- ✅ Multi-agent orchestration with `LlmAgent` and `AgentBuilder`
+- ✅ Specialized agents for different research tasks
+- ✅ Multi-provider support (GPT-4, Claude, Gemini)
+- ✅ Hybrid architecture combining ADK-TS with custom services
+- ✅ Real-world application with CLI and Telegram bot interfaces
+
+**Note**: I explored ADK-TS MCP Telegram integration but built a custom bot to enable file delivery (PDFs/Markdown) while maintaining the ADK-TS agent workflow.
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -34,6 +49,9 @@ An intelligent, autonomous research agent powered by **ADK-TS** (AI Development 
 - ⚡ **Real-time Progress**: Live updates on research progress through Telegram bot interface
 - 🎯 **Flexible Depth**: Choose between basic (3 sources), intermediate (5 sources), or comprehensive (10+ sources) research
 - 📱 **Telegram Integration**: Full-featured bot interface with interactive menus and direct file delivery
+- 🔧 **Hybrid Architecture**: Combines ADK-TS agents with custom services for maximum flexibility
+
+> **Hackathon Note**: I initially tried ADK-TS MCP Telegram for interactive messaging, but built a custom bot to add file delivery capabilities (PDFs and Markdown) while maintaining the ADK-TS multi-agent workflow.
 
 ### Research Workflow
 
@@ -112,69 +130,176 @@ src/
 
 ## 🧠 ADK-TS Implementation
 
-### Core Concepts
+### How ADK-TS Was Used for the Hackathon
 
-This project demonstrates proper ADK-TS patterns and best practices:
+This project was built **specifically for the ADK-TS Hackathon 2025** to showcase the power and flexibility of the ADK-TS framework. Here's how we leveraged ADK-TS throughout the development:
 
-#### 1. Agent Creation with `LlmAgent`
+#### **1. Multi-Agent Architecture (Core Hackathon Feature)**
 
+We designed a specialized multi-agent system where each agent has a focused responsibility:
+
+**QueryGeneratorAgent** - Creates intelligent search queries
 ```typescript
 import { LlmAgent } from '@iqai/adk';
 
 export function createQueryGeneratorAgent(model: string): LlmAgent {
   return new LlmAgent({
     name: 'query_generator',
-    model: 'gemini-1.5-flash',  // or 'gpt-4o', 'claude-3-5-sonnet'
+    model: 'gemini-1.5-flash',  // Supports multiple providers
     description: 'Generates diverse search queries for research',
     instruction: `You are an expert research librarian...`,
     outputKey: 'search_queries',
     generateContentConfig: {
-      temperature: 0.7,
+      temperature: 0.7,  // Balanced for creativity
       maxOutputTokens: 500,
     },
   });
 }
 ```
 
-#### 2. Agent Orchestration with `AgentBuilder`
+**ContentAnalyzerAgent** - Synthesizes research findings
+```typescript
+export function createContentAnalyzerAgent(model: string): LlmAgent {
+  return new LlmAgent({
+    name: 'content_analyzer',
+    model,
+    description: 'Analyzes and synthesizes research content',
+    instruction: `You are an expert research analyst...`,
+    outputKey: 'content_analysis',
+    generateContentConfig: {
+      temperature: 0.5,  // More focused for analysis
+      maxOutputTokens: 2000,
+    },
+  });
+}
+```
+
+**ReportGeneratorAgent** - Creates structured academic reports
+```typescript
+export function createReportGeneratorAgent(model: string): LlmAgent {
+  return new LlmAgent({
+    name: 'report_generator',
+    model,
+    description: 'Generates comprehensive research reports',
+    instruction: `You are an expert academic writer...`,
+    outputKey: 'research_report',
+    generateContentConfig: {
+      temperature: 0.6,  // Professional writing tone
+      maxOutputTokens: 4000,
+    },
+  });
+}
+```
+
+#### **2. Agent Orchestration with AgentBuilder**
+
+The `AutoResearchAgent` coordinates all specialized agents using ADK-TS patterns:
 
 ```typescript
 import { AgentBuilder } from '@iqai/adk';
 
+// Step 1: Generate search queries
 const queryAgent = createQueryGeneratorAgent('gemini-1.5-flash');
-
-const { runner } = await AgentBuilder
+const { runner: queryRunner } = await AgentBuilder
   .create('queryGenerator')
   .withAgent(queryAgent)
   .build();
 
-const response = await runner.ask(prompt);
+const queries = await queryRunner.ask(queryPrompt);
+
+// Step 2: Analyze content
+const analyzerAgent = createContentAnalyzerAgent('gemini-1.5-flash');
+const { runner: analyzerRunner } = await AgentBuilder
+  .create('contentAnalyzer')
+  .withAgent(analyzerAgent)
+  .build();
+
+const analysis = await analyzerRunner.ask(analysisPrompt);
+
+// Step 3: Generate report
+const reportAgent = createReportGeneratorAgent('gemini-1.5-flash');
+const { runner: reportRunner } = await AgentBuilder
+  .create('reportGenerator')
+  .withAgent(reportAgent)
+  .build();
+
+const report = await reportRunner.ask(reportPrompt);
 ```
 
-#### 3. Multi-Agent Workflow
+#### **3. CLI Implementation with ADK-TS**
 
-The `AutoResearchAgent` coordinates three specialized agents:
+The command-line interface leverages ADK-TS for intelligent interaction:
 
-- **QueryGeneratorAgent**: Generates diverse search queries
-  - Temperature: 0.7 (balanced creativity)
-  - Max tokens: 500
+- **Interactive Mode**: Uses `readline` for input, then passes to ADK-TS agents
+- **Agent Pipeline**: Each input goes through the multi-agent workflow
+- **Streaming Results**: Progress updates as each agent completes its task
+- **Error Recovery**: Graceful fallbacks when agents encounter issues
+
+```typescript
+// CLI workflow using ADK-TS agents
+async function runResearch(topic: string): Promise<void> {
+  const agent = new AutoResearchAgent();  // Orchestrator
   
-- **ContentAnalyzerAgent**: Analyzes and synthesizes content
-  - Temperature: 0.5 (focused analysis)
-  - Max tokens: 2000
+  // ADK-TS agents handle each phase:
+  // 1. QueryGeneratorAgent → search queries
+  // 2. SearchService → fetch content
+  // 3. ContentAnalyzerAgent → synthesize findings
+  // 4. ReportGeneratorAgent → create report
   
-- **ReportGeneratorAgent**: Creates structured reports
-  - Temperature: 0.6 (professional writing)
-  - Max tokens: 4000
+  const outputPaths = await agent.research({ topic });
+}
+```
 
-### Key ADK-TS Features Used
+#### **4. Telegram Bot with ADK-TS Integration**
 
-✅ **LlmAgent**: Specialized agent creation with clear roles  
-✅ **AgentBuilder**: Proper agent instantiation and runner creation  
-✅ **Model Flexibility**: Support for GPT-4, Claude, and Gemini  
-✅ **Prompt Engineering**: Structured prompts for consistent outputs  
-✅ **Error Handling**: Graceful fallbacks when agents fail  
+**Initial Approach**: I first tried the **ADK-TS MCP Telegram integration** for the hackathon, which provided excellent conversational capabilities and interactive messaging. However, we discovered a critical limitation: **MCP could send messages but not files** (PDFs and Markdown reports).
+
+**Solution**: I built a **custom Telegram bot** using Telegraf that:
+- Integrates with the same ADK-TS agents used in CLI
+- Adds file delivery capabilities
+- Maintains the multi-agent workflow
+- Includes a specialized `TopicExtractorAgent` for natural language understanding
+
+```typescript
+// TopicExtractorAgent - Understands natural language requests
+async extractResearchTopic(userMessage: string): Promise<string> {
+  const model = getDefaultModel(config);
+  const cleanTopic = await extractCleanTopic(userMessage, model);
+  // Uses ADK-TS agent to parse: "I want to research AI in healthcare"
+  // → "Artificial Intelligence in Healthcare"
+}
+
+// Then uses the same multi-agent system:
+async executeResearch(topic: string): Promise<void> {
+  this.researchAgent = new AutoResearchAgent(progressCallback);
+  // Same agents: QueryGenerator → ContentAnalyzer → ReportGenerator
+  const outputPaths = await this.researchAgent.research({ topic });
+  
+  // Custom code for file delivery (not available in MCP)
+  await this.sendFiles(outputPaths);
+}
+```
+
+#### **5. Key ADK-TS Features Demonstrated**
+
+✅ **LlmAgent**: Created 4 specialized agents (Query, Analysis, Report, Topic Extraction)  
+✅ **AgentBuilder**: Proper instantiation and runner creation for each agent  
+✅ **Model Flexibility**: Support for GPT-4, Claude 3.5, and Gemini 1.5  
+✅ **Prompt Engineering**: Structured prompts with clear instructions and output formats  
+✅ **Error Handling**: Graceful fallbacks when agents timeout or fail  
 ✅ **JSON Outputs**: Structured data extraction from LLM responses  
+✅ **Multi-Provider Support**: Automatic fallback between AI providers  
+✅ **Temperature Control**: Fine-tuned creativity vs. precision for each agent  
+
+#### **6. Hackathon Innovation: Hybrid Approach**
+
+For this hackathon, we combined:
+- **ADK-TS Agents**: Core intelligence and orchestration
+- **Custom Services**: Search, content extraction, PDF generation
+- **MCP Attempt**: Tried ADK-TS MCP Telegram (great for chat, limited for files)
+- **Custom Bot**: Built on ADK-TS agents with file delivery capabilities
+
+This demonstrates ADK-TS's flexibility - you can use the framework for core AI logic while adding custom functionality where needed.  
 
 ## 📦 Installation
 
@@ -330,6 +455,56 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/oauth2callback
 
 ### Command Line Interface
 
+The CLI provides a direct interface to the ADK-TS multi-agent research system.
+
+#### How ADK-TS Powers the CLI
+
+The command-line interface is built entirely around ADK-TS agents:
+
+**1. Agent Pipeline**
+```typescript
+// When you run the CLI, this workflow executes:
+const agent = new AutoResearchAgent();
+
+// Step 1: QueryGeneratorAgent (ADK-TS)
+const queries = await queryAgent.generateQueries(topic);
+// Uses LlmAgent with temperature 0.7 for creative query generation
+
+// Step 2: SearchService (custom)
+const searchResults = await searchService.search(queries);
+// Parallel searches across multiple APIs
+
+// Step 3: ContentAnalyzerAgent (ADK-TS)
+const analysis = await analyzerAgent.analyze(content);
+// Uses LlmAgent with temperature 0.5 for focused analysis
+
+// Step 4: ReportGeneratorAgent (ADK-TS)
+const report = await reportAgent.generateReport(analysis);
+// Uses LlmAgent with temperature 0.6 for professional writing
+```
+
+**2. Agent Builder Pattern**
+```typescript
+// Each agent is instantiated using ADK-TS AgentBuilder
+const { runner } = await AgentBuilder
+  .create('queryGenerator')
+  .withAgent(queryAgent)
+  .build();
+
+// Agents communicate through prompts and JSON responses
+const response = await runner.ask(prompt);
+```
+
+**3. Multi-Provider Support**
+```typescript
+// ADK-TS allows flexible model selection
+function selectModel(): string {
+  if (config.geminiApiKey) return 'gemini-1.5-flash';
+  if (config.openaiApiKey) return 'gpt-4o';
+  if (config.anthropicApiKey) return 'claude-3-5-sonnet-20241022';
+}
+```
+
 #### Interactive Mode
 
 ```bash
@@ -342,26 +517,109 @@ The agent will prompt you for:
 - Maximum sources
 - Include visualizations (yes/no)
 
+**Behind the scenes**: Each input is processed by ADK-TS agents with appropriate temperature settings for the task.
+
 #### Direct Topic Mode
 
 ```bash
 npm run dev -- "Artificial Intelligence in Healthcare"
 ```
 
+**What happens**:
+1. Input goes directly to the multi-agent pipeline
+2. QueryGeneratorAgent creates 5-7 search queries
+3. ContentAnalyzerAgent synthesizes findings from all sources
+4. ReportGeneratorAgent creates a comprehensive academic report
+5. PDF and Markdown files are generated
+
 #### Examples
 
 ```bash
-# Quick research
+# Quick research (basic depth - 3 sources)
 npm run dev -- "Climate Change Impact"
 
+# Standard research (intermediate depth - 5 sources)
+npm run dev -- "Quantum Computing Basics"
+
 # Run built version
-npm start "Quantum Computing Basics"
+npm start "Renewable Energy Technologies"
+```
+
+#### CLI Output
+
+The CLI shows progress as each ADK-TS agent completes:
+```
+🧠 AutoResearch Agent - Interactive Mode
+
+Step 1/6: Generating intelligent search queries with AI...
+✅ Step 1/6: Generated 5 search queries
+
+Step 2/6: Searching 5 queries across multiple sources...
+✅ Step 2/6: Found 15 relevant sources
+
+Step 3/6: Extracting content from 15 sources...
+✅ Step 3/6: Extracted content from 12 sources
+
+Step 4/6: Analyzing content with AI (this may take a moment)...
+✅ Step 4/6: Content analysis complete
+
+Step 5/6: Generating comprehensive research report...
+✅ Step 5/6: Report generated successfully
+
+Step 6/6: Creating PDF and Markdown files...
+✅ Complete! Generated 2 report files
 ```
 
 ### Telegram Bot
 
-#### Starting the Bot
+#### Try the Live Bot! 🤖
 
+**Bot Link**: https://t.me/autosearchagentbot
+
+> Just open Telegram, click the link above, and start chatting with the AutoResearch Agent!
+
+#### How the Telegram Bot Works
+
+The Telegram bot provides a conversational interface to the AutoResearch Agent with full ADK-TS integration:
+
+**1. Natural Language Understanding**
+- When you send a message, the bot uses a specialized **TopicExtractorAgent** (built with ADK-TS)
+- This agent intelligently parses your message to extract the research topic
+- Example: "I want to learn about AI in healthcare" → "Artificial Intelligence in Healthcare"
+
+**2. Multi-Agent Research Pipeline**
+- Uses the **same ADK-TS agents** as the CLI version:
+  - `QueryGeneratorAgent` → Creates search queries
+  - `ContentAnalyzerAgent` → Synthesizes findings
+  - `ReportGeneratorAgent` → Creates structured report
+  
+**3. Real-Time Progress Updates**
+- The bot sends live updates as each agent completes its work
+- You can see the research progress in real-time
+- Updates include: Query generation, searching, analysis, and report creation
+
+**4. File Delivery**
+- Once research is complete, the bot sends both PDF and Markdown files directly to your chat
+- Files are generated using the report generation service and delivered via Telegram's file API
+
+#### Why We Built a Custom Bot
+
+**Initial Attempt**: I tried using **ADK-TS MCP Telegram integration** for the hackathon, which provided excellent interactive messaging capabilities and conversational flow.
+
+**The Challenge**: While MCP Telegram was great for sending messages and creating interactive conversations, I discovered it **could not send files** (PDFs and Markdown reports) - only text messages.
+
+**Our Solution**: I built a custom Telegram bot using Telegraf that:
+- ✅ Integrates the **same ADK-TS agents** from the CLI version
+- ✅ Adds **file delivery capabilities** for PDF and Markdown reports
+- ✅ Maintains the **multi-agent workflow** and intelligence
+- ✅ Includes **interactive menus** with inline keyboards
+- ✅ Provides **conversational AI** with natural language understanding
+
+This hybrid approach leverages ADK-TS for the core AI logic while adding custom code for features the MCP integration doesn't support.
+
+#### Starting the Bot (For Developers)
+
+**Local Development (Polling Mode):**
 ```bash
 # Development mode (with hot reload)
 npm run telegram-bot
@@ -370,31 +628,53 @@ npm run telegram-bot
 npm run bot:prod
 ```
 
+**Production Deployment (Webhook Mode):**
+
+For deploying to cloud platforms like Render, Heroku, or Railway:
+
+```bash
+# Development with webhook (requires ngrok)
+npm run bot:webhook
+
+# Production mode
+npm run start:webhook
+```
+
+**📘 Deployment Guide**: See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) for detailed instructions on deploying to Render.
+
+**Quick Deploy to Render:**
+1. Run `./deploy-render.sh` to prepare your project
+2. Push to GitHub
+3. Connect to Render
+4. Set environment variables (see deployment guide)
+5. Your bot will be live with webhook support!
+
 #### Using the Bot
 
-1. **Start**: Send `/start` to your bot
-2. **Research**: Send any research topic
-3. **Choose Depth**: Select Quick/Standard/Deep research
-4. **Wait**: Research takes 1-5 minutes depending on depth
-5. **Receive**: Bot sends PDF and Markdown files directly
+1. **Start**: Open https://t.me/autosearchagentbot or send `/start`
+2. **Research**: Send any research topic naturally (e.g., "research AI in healthcare")
+3. **Choose Depth**: Select Quick (3 sources), Standard (5 sources), or Deep (10+ sources)
+4. **Watch Progress**: See real-time updates as the agents work
+5. **Receive Files**: Get PDF and Markdown reports delivered directly to your chat
 
 #### Bot Commands
 
 - `/start` - Welcome message and instructions
 - `/help` - Detailed help and examples
-- `/history` - View your research history
-- `/settings` - Adjust default preferences
+- `/history` - View your research history (last 10 topics)
+- `/settings` - Adjust default research depth preferences
 - `/cancel` - Cancel ongoing research
 
 #### Bot Features
 
-- 🎯 **Smart Topic Extraction**: Understands natural language requests
-- 💬 **Conversational**: Responds to greetings and casual chat
-- 📊 **Progress Updates**: Real-time updates during research
-- 📁 **Direct File Delivery**: Sends PDF and Markdown directly to chat
+- 🎯 **Smart Topic Extraction**: ADK-TS agent understands natural language requests
+- 💬 **Conversational AI**: Responds to greetings, questions, and casual chat
+- 📊 **Progress Updates**: Real-time updates as each ADK-TS agent completes its work
+- 📁 **Direct File Delivery**: Sends PDF and Markdown directly to chat (not available in MCP)
 - 🔄 **Research History**: Tracks your previous research topics
 - ⚙️ **Customizable**: Set default research depth preferences
 - 🎨 **Interactive Menus**: Inline keyboard buttons for easy selection
+- 🤖 **Multi-Agent Pipeline**: Same ADK-TS agents as CLI for consistency
 
 ### Output
 

@@ -27,8 +27,8 @@ RUN npm install --omit=dev --silent
 # Copy compiled output from builder
 COPY --from=builder /usr/src/app/dist ./dist
 
-# Expose a port if your bot/service listens on one (optional)
-# EXPOSE 3000
+# Expose port for HTTP server (Render requirement)
+EXPOSE 3000
 
-# Default command — runs the compiled entrypoint
-CMD ["node", "dist/index.js"]
+# Default command — runs the Telegram bot
+CMD ["node", "dist/telegram-bot.js"]

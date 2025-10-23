@@ -1,7 +1,7 @@
 import { SequentialAgent } from '@iqai/adk';
-import { createQueryGeneratorAgent } from '../specialized/QueryGeneratorAgent';
-import { createContentAnalyzerAgent } from '../specialized/ContentAnalyzerAgent';
-import { createReportGeneratorAgent } from '../specialized/ReportGeneratorAgent';
+import { createQueryGeneratorAgent } from '../specialized/QueryGeneratorAgent.js';
+import { createContentAnalyzerAgent } from '../specialized/ContentAnalyzerAgent.js';
+import { createReportGeneratorAgent } from '../specialized/ReportGeneratorAgent.js';
 
 export interface ResearchPipelineConfig {
   aiProvider?: 'gemini' | 'openai' | 'anthropic';

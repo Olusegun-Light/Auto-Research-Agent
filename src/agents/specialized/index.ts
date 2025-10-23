@@ -8,7 +8,7 @@
  * - Optimized temperature and token limits for each task
  */
 
-export { createQueryGeneratorAgent } from './QueryGeneratorAgent';
-export { createContentAnalyzerAgent } from './ContentAnalyzerAgent';
-export { createReportGeneratorAgent } from './ReportGeneratorAgent';
-export { createTopicExtractorAgent, extractCleanTopic } from './TopicExtractorAgent';
+export { createQueryGeneratorAgent } from './QueryGeneratorAgent.js';
+export { createContentAnalyzerAgent } from './ContentAnalyzerAgent.js';
+export { createReportGeneratorAgent } from './ReportGeneratorAgent.js';
+export { createTopicExtractorAgent, extractCleanTopic } from './TopicExtractorAgent.js';

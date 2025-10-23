@@ -719,11 +719,11 @@ Send a topic to get started! 🔬
   }
 
   /**
-   * Start the bot
+   * Start the bot (polling mode - for local development)
    */
   async start(): Promise<void> {
     try {
-      logger.info('Starting Telegram bot...');
+      logger.info('Starting Telegram bot in polling mode...');
 
       // Verify bot token
       const botInfo = await this.bot.telegram.getMe();
@@ -735,7 +735,7 @@ Send a topic to get started! 🔬
       // Launch bot with graceful stop
       await this.bot.launch();
 
-      logger.success('✅ Bot is running and listening for messages!');
+      logger.success('✅ Bot is running and listening for messages (polling mode)!');
 
       // Enable graceful stop
       process.once('SIGINT', () => this.stop('SIGINT'));
@@ -748,10 +748,102 @@ Send a topic to get started! 🔬
   }
 
   /**
-   * Stop the bot gracefully
+   * Get bot information
+   */
+  async getBotInfo() {
+    return await this.bot.telegram.getMe();
+  }
+
+  /**
+   * Setup webhook configuration (without starting server)
+   */
+  async setupWebhook(webhookUrl: string, webhookPath: string, app: any): Promise<void> {
+    try {
+      // Set up bot commands menu
+      await this.setupBotCommands();
+
+      // Set webhook
+      await this.bot.telegram.setWebhook(webhookUrl);
+      logger.success(`Webhook set to: ${webhookUrl}`);
+
+      // Add webhook callback to Express app
+      app.use(this.bot.webhookCallback(webhookPath));
+      logger.success(`Webhook callback configured for path: ${webhookPath}`);
+
+      // Enable graceful stop
+      process.once('SIGINT', () => this.stopWebhook('SIGINT'));
+      process.once('SIGTERM', () => this.stopWebhook('SIGTERM'));
+
+    } catch (error) {
+      logger.error('Failed to setup webhook:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start the bot with webhook (for production deployment)
+   */
+  async startWebhook(
+    webhookUrl: string,
+    webhookPath: string,
+    app: any,
+    port: number
+  ): Promise<void> {
+    try {
+      logger.info('Starting Telegram bot in webhook mode...');
+
+      // Verify bot token
+      const botInfo = await this.bot.telegram.getMe();
+      logger.success(`Bot connected: @${botInfo.username}`);
+
+      // Set up bot commands menu
+      await this.setupBotCommands();
+
+      // Set webhook
+      await this.bot.telegram.setWebhook(webhookUrl);
+      logger.success(`Webhook set to: ${webhookUrl}`);
+
+      // Use secretPathComponent for security
+      app.use(this.bot.webhookCallback(webhookPath));
+
+      // Start Express server
+      app.listen(port, () => {
+        logger.success(`✅ Webhook server is running on port ${port}!`);
+        logger.info(`Webhook endpoint: ${webhookPath}`);
+      });
+
+      // Enable graceful stop
+      process.once('SIGINT', () => this.stopWebhook('SIGINT'));
+      process.once('SIGTERM', () => this.stopWebhook('SIGTERM'));
+
+    } catch (error) {
+      logger.error('Failed to start webhook bot:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Stop the bot gracefully (polling mode)
    */
   private async stop(signal: string): Promise<void> {
     logger.info(`Received ${signal} - stopping bot gracefully...`);
+    this.bot.stop(signal);
+    logger.info('Bot stopped');
+    process.exit(0);
+  }
+
+  /**
+   * Stop the bot gracefully (webhook mode)
+   */
+  private async stopWebhook(signal: string): Promise<void> {
+    logger.info(`Received ${signal} - stopping webhook bot gracefully...`);
+    try {
+      // Remove webhook
+      await this.bot.telegram.deleteWebhook();
+      logger.info('Webhook removed');
+    } catch (error) {
+      logger.error('Failed to remove webhook:', error);
+    }
     this.bot.stop(signal);
     logger.info('Bot stopped');
     process.exit(0);

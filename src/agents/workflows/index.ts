@@ -7,5 +7,5 @@
  * - LoopAgent: Repeat until conditions met
  */
 
-export { createResearchPipelineAgent } from './ResearchPipelineAgent';
-export type { ResearchPipelineConfig } from './ResearchPipelineAgent';
+export { createResearchPipelineAgent } from './ResearchPipelineAgent.js';
+export type { ResearchPipelineConfig } from './ResearchPipelineAgent.js';
