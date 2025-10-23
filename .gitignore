@@ -14,7 +14,7 @@ build/
 .env.local
 
 # Outputs
-outputs/
+# outputs/
 *.pdf
 *.docx
 
