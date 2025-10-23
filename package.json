@@ -1,0 +1,74 @@
+{
+  "name": "autoresearch-agent",
+  "version": "1.0.0",
+  "description": "AI-powered autonomous research agent built with ADK-TS for the ADK-TS Hackathon 2025. Uses multi-agent orchestration to search, analyze, and generate structured academic reports with citations.",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "telegram-bot": "tsx src/telegram-bot.ts",
+    "bot": "tsx src/telegram-bot.ts",
+    "bot:prod": "node dist/telegram-bot.js",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:telegram": "node dist/telegram-bot.js",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "adk-ts",
+    "adk-ts-hackathon",
+    "hackathon-2025",
+    "research-agent",
+    "autonomous-agent",
+    "multi-agent-system",
+    "ai",
+    "llm",
+    "report-generator",
+    "telegram-bot",
+    "academic-research",
+    "gemini",
+    "openai",
+    "anthropic"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Olusegun-Light/Auto-Research-Agent"
+  },
+  "bugs": {
+    "url": "https://github.com/Olusegun-Light/Auto-Research-Agent/issues"
+  },
+  "homepage": "https://github.com/Olusegun-Light/Auto-Research-Agent",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@iqai/adk": "^0.5.0",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "form-data": "^4.0.4",
+    "https-proxy-agent": "^7.0.6",
+    "marked": "^11.0.0",
+    "pdfkit": "^0.13.0",
+    "telegraf": "^4.16.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.23",
+    "@types/json-schema": "^7.0.15",
+    "@types/node": "^20.19.20",
+    "@types/pdfkit": "^0.13.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
