@@ -64,8 +64,8 @@ export class ReportGenerationService {
     markdown += `---\n\n`;
     
     // Abstract/Executive Summary
-    markdown += `## Abstract\n\n${report.summary}\n\n`;
-    markdown += `---\n\n`;
+    markdown += `\n---PAGE BREAK---\n\n`;
+    markdown += `## Abstract\n\n${this.stripPageBreak(report.summary)}\n\n`;
 
     // Table of Contents
     markdown += `## Table of Contents\n\n`;
@@ -82,8 +82,8 @@ export class ReportGenerationService {
 
     // Main sections
     report.sections.forEach((section, idx) => {
+      markdown += `\n---PAGE BREAK---\n\n`;
       markdown += this.renderSection(section, 2, report.citations, idx + 1);
-      markdown += `\n---\n\n`;
     });
 
     // Visualizations (if any)
@@ -157,9 +157,10 @@ export class ReportGenerationService {
       // Abstract
       doc.fontSize(16).font('Helvetica-Bold').text('Abstract');
       doc.moveDown();
-      const cleanSummary = this.cleanMarkdownForPDF(report.summary);
+      const cleanSummary = this.cleanMarkdownForPDF(this.stripPageBreak(report.summary));
       doc.fontSize(11).font('Helvetica').text(cleanSummary, { align: 'justify' });
       doc.moveDown(2);
+
 
       // Table of Contents
       doc.fontSize(16).font('Helvetica-Bold').text('Table of Contents');
@@ -180,8 +181,9 @@ export class ReportGenerationService {
       // New page for main content
       doc.addPage();
 
-      // Sections
+      // Sections — each starts on a new page
       report.sections.forEach((section, idx) => {
+        doc.addPage();
         this.renderPDFSection(doc, section, 14, idx + 1);
       });
 
@@ -238,8 +240,9 @@ export class ReportGenerationService {
       markdown += `---\n\n`;
       
       // Abstract
-      markdown += `## Abstract\n\n${report.summary}\n\n`;
-      markdown += `---\n\n`;
+      markdown += `\n---PAGE BREAK---\n\n`;
+      markdown += `## Abstract\n\n${this.stripPageBreak(report.summary)}\n\n`;
+
 
       // Table of Contents
       markdown += `## Table of Contents\n\n`;
@@ -251,9 +254,10 @@ export class ReportGenerationService {
 
       // Main sections
       report.sections.forEach((section, idx) => {
+        markdown += `\n---PAGE BREAK---\n\n`;
         markdown += `## ${idx + 1}. ${section.title}\n\n`;
-        markdown += `${section.content}\n\n`;
-        markdown += `---\n\n`;
+        const cleanedContent = this.stripPageBreak(section.content);
+        markdown += `${cleanedContent}\n\n`;
       });
 
       // References
@@ -284,7 +288,9 @@ export class ReportGenerationService {
   private renderSection(section: any, level: number, citations: Citation[], sectionNumber?: number): string {
     const numberPrefix = sectionNumber ? `${sectionNumber}. ` : '';
     let markdown = `${'#'.repeat(level)} ${numberPrefix}${section.title}\n\n`;
-    markdown += `${section.content}\n\n`;
+    // Strip ---PAGE BREAK--- marker from content (we already inserted it before the header)
+    const cleanedContent = this.stripPageBreak(section.content);
+    markdown += `${cleanedContent}\n\n`;
 
     // Add inline citations at the end of section
     if (section.citations && section.citations.length > 0) {
@@ -319,18 +325,14 @@ export class ReportGenerationService {
    * Render a section in PDF (with section numbering)
    */
   private renderPDFSection(doc: any, section: any, fontSize: number, sectionNumber?: number): void {
-    if (doc.y > 700) {
-      doc.addPage();
-    }
-
     const numberPrefix = sectionNumber ? `${sectionNumber}. ` : '';
     // Clean markdown formatting from title
     const cleanTitle = this.cleanMarkdownForPDF(section.title);
     doc.fontSize(fontSize).font('Helvetica-Bold').text(`${numberPrefix}${cleanTitle}`);
     doc.moveDown(0.5);
     
-    // Clean markdown formatting from content
-    const cleanContent = this.cleanMarkdownForPDF(section.content);
+    // Strip ---PAGE BREAK--- marker and clean markdown from content
+    const cleanContent = this.cleanMarkdownForPDF(this.stripPageBreak(section.content));
     doc.fontSize(11).font('Helvetica').text(cleanContent, { align: 'justify' });
     doc.moveDown();
 
@@ -394,6 +396,16 @@ export class ReportGenerationService {
     });
 
     return table + '\n';
+  }
+
+  /**
+   * Strip the ---PAGE BREAK--- marker from the start of section content.
+   * The marker is used by the AI to signal section boundaries but should be
+   * removed or replaced during rendering.
+   */
+  private stripPageBreak(text: string): string {
+    if (!text) return '';
+    return text.replace(/^\s*---PAGE BREAK---\s*/i, '').trim();
   }
 
   /**

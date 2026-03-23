@@ -12,7 +12,7 @@ import { Telegraf, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
 import { AutoResearchAgent } from '../agents/AutoResearchAgent.js';
 import { extractCleanTopic } from '../agents/specialized/index.js';
-import type { ResearchTopic } from '../types/index.js';
+import type { ResearchTopic, ResearchMode } from '../types/index.js';
 import { Logger } from '../utils/index.js';
 import { config, getDefaultModel } from '../config/index.js';
 import { Input } from 'telegraf';
@@ -27,7 +27,7 @@ export class TelegramBot {
   private currentCtx?: Context;
   private userHistory: Map<number, string[]> = new Map();
   private userPreferences: Map<number, { depth: 'basic' | 'intermediate' | 'comprehensive' }> = new Map();
-  private pendingResearch: Map<number, string> = new Map();
+  private pendingResearch: Map<number, { topic: string; depth?: 'basic' | 'intermediate' | 'comprehensive' }> = new Map();
 
   constructor(botToken: string) {
     this.bot = new Telegraf(botToken);
@@ -205,10 +205,10 @@ Send a topic to get started! 🔬
         // Extract the actual research topic from the message
         const topic = await this.extractResearchTopic(userMessage, ctx);
         
-        // Save for potential depth selection
+        // Save for depth + mode selection
         const userId = ctx.from?.id;
         if (userId) {
-          this.pendingResearch.set(userId, topic);
+          this.pendingResearch.set(userId, { topic });
         }
 
         // Ask user to select research depth
@@ -218,13 +218,11 @@ Send a topic to get started! 🔬
           {
             parse_mode: 'Markdown',
             reply_markup: {
-              inline_keyboard: [[
-                { text: '⚡ Quick (3 sources, ~1-2 min)', callback_data: 'depth_basic' },
-              ], [
-                { text: '📚 Standard (5 sources, ~2-3 min)', callback_data: 'depth_intermediate' },
-              ], [
-                { text: '🔬 Deep (10+ sources, ~3-5 min)', callback_data: 'depth_comprehensive' }
-              ]]
+              inline_keyboard: [
+                [{ text: '⚡ Quick (3 sources, ~1-2 min)', callback_data: 'depth_basic' }],
+                [{ text: '📚 Standard (5 sources, ~2-3 min)', callback_data: 'depth_intermediate' }],
+                [{ text: '🔬 Deep (10+ sources, ~3-5 min)', callback_data: 'depth_comprehensive' }]
+              ]
             }
           }
         );
@@ -258,30 +256,62 @@ Send a topic to get started! 🔬
         return;
       }
 
-      // Handle research depth selection
+      // Handle research depth selection - now shows mode keyboard next
       if (data?.startsWith('depth_')) {
         const depth = data.replace('depth_', '') as 'basic' | 'intermediate' | 'comprehensive';
-        const topic = this.pendingResearch.get(userId);
+        const pending = this.pendingResearch.get(userId);
 
-        if (!topic) {
+        if (!pending) {
           await ctx.answerCbQuery('❌ Topic not found. Please try again.');
           return;
         }
 
-        // Clear pending research
+        // Save depth choice and show mode selection
+        this.pendingResearch.set(userId, { topic: pending.topic, depth });
+
+        await ctx.answerCbQuery('✅ Depth selected!');
+        await ctx.editMessageText(
+          `📊 *Topic:* "${pending.topic}"\n🔍 *Depth:* ${depth}\n\nNow choose a research mode:`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '⚡ Fast', callback_data: 'mode_fast' },
+                  { text: '📚 Standard', callback_data: 'mode_standard' },
+                ],
+                [
+                  { text: '🔬 Deep', callback_data: 'mode_deep' },
+                  { text: '🔍 Critical', callback_data: 'mode_critical' },
+                  { text: '📊 Data', callback_data: 'mode_data' },
+                ],
+              ]
+            }
+          }
+        );
+        return;
+      }
+
+      // Handle research mode selection - launches research
+      if (data?.startsWith('mode_')) {
+        const mode = data.replace('mode_', '') as ResearchMode;
+        const pending = this.pendingResearch.get(userId);
+
+        if (!pending || !pending.depth) {
+          await ctx.answerCbQuery('❌ Session expired. Please start over.');
+          return;
+        }
+
+        const { topic, depth } = pending;
         this.pendingResearch.delete(userId);
 
-        // Answer callback query
         await ctx.answerCbQuery('🚀 Starting research...');
-
-        // Edit message to show selection
         await ctx.editMessageText(
-          `✅ Starting *${depth}* research on:\n"${topic}"`,
+          `✅ Starting *${mode}* mode (${depth} depth) research on:\n"${topic}"`,
           { parse_mode: 'Markdown' }
         );
 
-        // Execute research with selected depth
-        await this.executeResearchWithDepth(topic, depth, ctx);
+        await this.executeResearchWithDepth(topic, depth, mode, ctx);
         return;
       }
 
@@ -539,6 +569,7 @@ Send a topic to get started! 🔬
   private async executeResearchWithDepth(
     topic: string,
     depth: 'basic' | 'intermediate' | 'comprehensive',
+    mode: ResearchMode,
     ctx: Context
   ): Promise<void> {
     try {
@@ -562,7 +593,8 @@ Send a topic to get started! 🔬
         topic,
         depth,
         maxSources,
-        includeVisualization: depth === 'comprehensive'
+        includeVisualization: depth === 'comprehensive',
+        mode,
       };
 
       // Execute research (with real-time progress updates)

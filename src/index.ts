@@ -3,7 +3,7 @@
  */
 
 import { AutoResearchAgent } from './agents/AutoResearchAgent.js';
-import { ResearchTopic } from './types/index.js';
+import { ResearchTopic, ResearchMode } from './types/index.js';
 import { Logger } from './utils/index.js';
 import { config } from './config/index.js';
 import * as readline from 'readline';
@@ -39,6 +39,9 @@ async function interactiveMode(): Promise<void> {
   const depthInput = await question('\nResearch depth (basic/intermediate/comprehensive) [intermediate]: ');
   const depth = (depthInput.trim() || 'intermediate') as 'basic' | 'intermediate' | 'comprehensive';
 
+  const modeInput = await question('\nResearch mode (standard/deep/fast/critical/data) [standard]: ');
+  const mode = (modeInput.trim() || 'standard') as ResearchMode;
+
   const maxSourcesInput = await question(`\nMaximum sources (1-50) [${config.maxSearchResults}]: `);
   const maxSources = parseInt(maxSourcesInput) || config.maxSearchResults;
 
@@ -53,6 +56,7 @@ async function interactiveMode(): Promise<void> {
   const researchTopic: ResearchTopic = {
     topic,
     depth,
+    mode,
     maxSources: Math.min(Math.max(maxSources, 1), 50),
     includeVisualization,
     outputFormats: config.reportFormats,
