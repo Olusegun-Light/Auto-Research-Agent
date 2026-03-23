@@ -64,8 +64,9 @@ export class ReportGenerationService {
     markdown += `---\n\n`;
     
     // Abstract/Executive Summary
-    markdown += `\n---PAGE BREAK---\n\n`;
+    markdown += `\n---\n\n`;
     markdown += `## Abstract\n\n${this.stripPageBreak(report.summary)}\n\n`;
+    markdown += `\n---\n\n`;
 
     // Table of Contents
     markdown += `## Table of Contents\n\n`;
@@ -82,7 +83,7 @@ export class ReportGenerationService {
 
     // Main sections
     report.sections.forEach((section, idx) => {
-      markdown += `\n---PAGE BREAK---\n\n`;
+      markdown += `\n---\n\n`;
       markdown += this.renderSection(section, 2, report.citations, idx + 1);
     });
 
@@ -240,9 +241,9 @@ export class ReportGenerationService {
       markdown += `---\n\n`;
       
       // Abstract
-      markdown += `\n---PAGE BREAK---\n\n`;
+      markdown += `\n---\n\n`;
       markdown += `## Abstract\n\n${this.stripPageBreak(report.summary)}\n\n`;
-
+      markdown += `\n---\n\n`;
 
       // Table of Contents
       markdown += `## Table of Contents\n\n`;
@@ -254,7 +255,7 @@ export class ReportGenerationService {
 
       // Main sections
       report.sections.forEach((section, idx) => {
-        markdown += `\n---PAGE BREAK---\n\n`;
+        markdown += `\n---\n\n`;
         markdown += `## ${idx + 1}. ${section.title}\n\n`;
         const cleanedContent = this.stripPageBreak(section.content);
         markdown += `${cleanedContent}\n\n`;
@@ -405,7 +406,7 @@ export class ReportGenerationService {
    */
   private stripPageBreak(text: string): string {
     if (!text) return '';
-    return text.replace(/^\s*---PAGE BREAK---\s*/i, '').trim();
+    return text.replace(/---PAGE BREAK---/gi, '').trim();
   }
 
   /**
